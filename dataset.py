@@ -31,9 +31,6 @@ class SASV_Dataset(Dataset):
             # load speaker models for development and evaluation sets
             with open(self.embedding_dir + "spk_model_" + self.part + ".pk", "rb") as f:
                 self.spk_model = pk.load(f)
-            # load speaker CM models for development and evaluation sets
-            with open(self.embedding_dir + "spk_cm_model_" + self.part + ".pk", "rb") as f:
-                self.spk_cm_model = pk.load(f)
 
     def __len__(self):
         if self.part == "trn":
@@ -52,7 +49,6 @@ class SASV_Dataset(Dataset):
             nontarget_type = 0
         elif ans_type == 0:  # nontarget
             nontarget_type = random.randint(1, 2)
-
             if nontarget_type == 1:  # zero-effort nontarget
                 spk, ze_spk = random.sample(self.spk_meta.keys(), 2)
                 enr = random.choice(self.spk_meta[spk]["bonafide"])
@@ -71,8 +67,7 @@ class SASV_Dataset(Dataset):
             raise ValueError
 
         return self.asv_embd[enr], self.asv_embd[tst], \
-               self.cm_embd[enr], self.cm_embd[tst], \
-               ans_type, nontarget_type
+               self.cm_embd[tst], ans_type, nontarget_type
 
     def getitem_dev(self, index):
         line = self.utt_list[index]
@@ -81,8 +76,7 @@ class SASV_Dataset(Dataset):
         nontype_dict = {"target": 0, "nontarget": 1, "spoof": 2}
 
         return self.spk_model[spkmd], self.asv_embd[key], \
-               self.spk_cm_model[spkmd], self.cm_embd[key], \
-               ans_type, nontype_dict[ans]
+               self.cm_embd[key], ans_type, nontype_dict[ans]
 
     def getitem_eval(self, index):
         line = self.utt_list[index]
@@ -91,6 +85,5 @@ class SASV_Dataset(Dataset):
         nontype_dict = {"target": 0, "nontarget": 1, "spoof": 2}
 
         return self.spk_model[spkmd], self.asv_embd[key], \
-               self.spk_cm_model[spkmd], self.cm_embd[key], \
-               ans_type, nontype_dict[ans]
+               self.cm_embd[key], ans_type, nontype_dict[ans]
 

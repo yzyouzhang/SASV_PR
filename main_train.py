@@ -15,8 +15,8 @@ def initParams():
     parser.add_argument('--seed', type=int, help="random number seed", default=688)
 
     parser.add_argument('-m', '--model_name', help='Model arch', default='baseline',
-                        choices=['baseline', 'simprob', 'mtprob', 'toyprob', 'simprob_woTrn',
-                                 'baseline1', 'baseline2', 'jointprob'])
+                        choices=['baseline1', 'baseline2', 'pr', 'sr'])
+    parser.add_argument('-tr', '--trainable', type=str2bool, nargs='?', const=True, default=True)
 
     # Output folder prepare
     parser.add_argument(
@@ -56,27 +56,6 @@ def initParams():
     parser.add_argument('--test_only', action='store_true',
                         help="test the trained model in case the test crash sometimes or another test method")
 
-    # parser.add_argument('--pad_chop', type=str2bool, nargs='?', const=True, default=True, help="whether pad_chop in the dataset")
-    # parser.add_argument('--padding', type=str, default='repeat', choices=['zero', 'repeat', 'silence'],
-    #                     help="how to pad short utterance")
-    # parser.add_argument("--enc_dim", type=int, help="encoding dimension", default=256)
-    #
-    # # Training hyperparameters
-    # parser.add_argument('--lr_decay', type=float, default=0.5, help="decay learning rate")
-    # parser.add_argument('--interval', type=int, default=30, help="interval to decay lr")
-    #
-    # parser.add_argument('--eps', type=float, default=1e-8, help="epsilon for Adam")
-    #
-    # parser.add_argument('--base_loss', type=str, default="ce", choices=["ce", "bce"], help="use which loss for basic training")
-    # parser.add_argument('--add_loss', type=str, default=None,
-    #                     choices=[None, 'isolate', 'ang_iso', 'p2sgrad'], help="add other loss for one-class training")
-    # parser.add_argument('--weight_loss', type=float, default=1, help="weight for other loss")
-    # parser.add_argument('--r_real', type=float, default=0.9, help="r_real for isolate loss")
-    # parser.add_argument('--r_fake', type=float, default=0.2, help="r_fake for isolate loss")
-
-    # parser.add_argument('--visualize', action='store_true', help="feature visualization")
-    # parser.add_argument('--continue_training', action='store_true', help="continue training with trained model")
-
     args = parser.parse_args()
 
     # Change this to specify GPU
@@ -113,13 +92,6 @@ def initParams():
         # Save training arguments
         with open(os.path.join(args.output_dir, 'args.json'), 'w') as file:
             file.write(json.dumps(vars(args), sort_keys=True, separators=('\n', ':')))
-    #
-    # with open(os.path.join(args.out_fold, 'train_loss.log'), 'w') as file:
-    #     file.write("Start recording training loss ...\n")
-    # with open(os.path.join(args.out_fold, 'dev_loss.log'), 'w') as file:
-    #     file.write("Start recording validation loss ...\n")
-    # with open(os.path.join(args.out_fold, 'test_loss.log'), 'w') as file:
-    #     file.write("Start recording test loss ...\n")
 
     args.cuda = torch.cuda.is_available()
     print('Cuda device available: ', args.cuda)
@@ -128,22 +100,14 @@ def initParams():
     return args
 
 def train(args):
-    if args.model_name == "baseline":
-        model = BaselineModel(num_nodes=[512, 256, 128, 64])
-    elif args.model_name == "simprob":
-        model = SimpleProbModel()
-    elif args.model_name == "mtprob":
-        model = MTProbModel()
-    elif args.model_name == "toyprob":
-        model = ToyProbModel()
-    elif args.model_name == "simprob_woTrn":
-        model = SimpleProbModel_woTrn()
+    if args.model_name == "pr":
+        model = Parallel_PR(trainable=args.trainable)
+    elif args.model_name == "sr":
+        model = Parallel_SR(trainable=args.trainable)
     elif args.model_name == "baseline1":
         model = Baseline1()
     elif args.model_name == "baseline2":
         model = Baseline2(num_nodes=[256, 128, 64])
-    elif args.model_name == "jointprob":
-        model = JointProbModel()
     else:
         raise ValueError("Which model do you want to use?")
     set_init_weights(model)
@@ -153,20 +117,15 @@ def train(args):
     return trainer
 
 def evaluate_one_iter(args, model, data_minibatch):
-    asv1, asv2, cm1, cm2, ans, non = data_minibatch
+    asv1, asv2, cm2, ans, key = data_minibatch
     if torch.cuda.is_available():
         asv1 = asv1.to(args.device)
         asv2 = asv2.to(args.device)
-        cm1 = cm1.to(args.device)
         cm2 = cm2.to(args.device)
-        ans = ans.to(args.device)
-        non = non.to(args.device)
 
-    pred = model(asv1, asv2, cm1, cm2)
-    if args.model_name == "baseline":
-        pred = torch.softmax(pred, dim=-1)
+    pred = model(asv1, asv2, cm2)
 
-    return {"pred": pred, "key": non}
+    return {"pred": pred, "key": key}
 
 def evaluate_on_set(args, model, set):
     model.eval()

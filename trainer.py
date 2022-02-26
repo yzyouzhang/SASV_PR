@@ -28,17 +28,15 @@ class Trainer(object):
 
 
     def training_one_iter(self, data_minibatch):
-        asv1, asv2, cm1, cm2, ans, non = data_minibatch
+        asv1, asv2, cm2, ans, key = data_minibatch
         if torch.cuda.is_available():
             asv1 = asv1.to(self.args.device)
             asv2 = asv2.to(self.args.device)
-            cm1 = cm1.to(self.args.device)
             cm2 = cm2.to(self.args.device)
             ans = ans.to(self.args.device)
-            non = non.to(self.args.device)
 
-        pred = self.model(asv1, asv2, cm1, cm2)
-        nloss = self.model.calc_loss(asv1, asv2, cm1, cm2, ans, non)
+        pred = self.model(asv1, asv2, cm2)
+        nloss = self.model.calc_loss(asv1, asv2, cm2, ans)
         self.optimizer.zero_grad()
         nloss.backward()
         if self.args.clip_norm:
@@ -47,7 +45,7 @@ class Trainer(object):
         self.optimizer.step()
         if self.args.model_name == "baseline":
             pred = torch.softmax(pred, dim=-1)
-        output = (pred, non)
+        output = (pred, key)
 
         return nloss, output
 
@@ -81,20 +79,18 @@ class Trainer(object):
         return loss / tot_batch, sasv_eer
 
     def validate_one_iter(self, data_minibatch):
-        asv1, asv2, cm1, cm2, ans, non = data_minibatch
+        asv1, asv2, cm2, ans, key = data_minibatch
         if torch.cuda.is_available():
             asv1 = asv1.to(self.args.device)
             asv2 = asv2.to(self.args.device)
-            cm1 = cm1.to(self.args.device)
             cm2 = cm2.to(self.args.device)
             ans = ans.to(self.args.device)
-            non = non.to(self.args.device)
 
-        pred = self.model(asv1, asv2, cm1, cm2)
-        nloss = self.model.calc_loss(asv1, asv2, cm1, cm2, ans, non)
+        pred = self.model(asv1, asv2, cm2)
+        nloss = self.model.calc_loss(asv1, asv2, cm2, ans)
         if self.args.model_name == "baseline":
             pred = torch.softmax(pred, dim=-1)
-        output = (pred, non)
+        output = (pred, key)
 
         return nloss, output
 
