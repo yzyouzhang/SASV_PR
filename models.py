@@ -110,10 +110,11 @@ class Baseline2(nn.Module):
 
 
 class Parallel_PR(nn.Module):
-    def __init__(self, trainable=True):
+    def __init__(self, trainable=True, calibrator=None):
         super().__init__()
         self.name = "ProductRule"
         self.trainable = trainable
+        self.calibrator = calibrator
         self.fc_cm = nn.Linear(160, 1)
         if not self.trainable:
             aasist = torch.load("./aasist/models/weights/AASIST.pth")
@@ -136,6 +137,10 @@ class Parallel_PR(nn.Module):
 
     def forward(self, embd_asv_enr, embd_asv_tst, embd_cm_tst):
         p_sv = self.forward_SV_prob(embd_asv_enr, embd_asv_tst)
+        if not self.trainable and self.calibrator:
+            asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
+            p_sv = self.calibrator.predict_proba(asv_cos.cpu().numpy())[:, 1]
+            p_sv = torch.from_numpy(p_sv).to(embd_asv_enr.device).unsqueeze(1)
         p_cm = self.forward_CM_prob(embd_cm_tst)
         x = p_sv * p_cm
         return x
