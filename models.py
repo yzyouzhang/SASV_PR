@@ -2,40 +2,6 @@ import torch
 from torch import nn
 
 
-class SimpleProbModel_woTrn(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.name = "SimpleProb_woTrn"
-        self.fc_cm = nn.Linear(160, 1)
-        self.coss = nn.CosineSimilarity(dim=1, eps=1e-8)
-        self.sigmoid = nn.Sigmoid()
-        aasist = torch.load("./aasist/models/weights/AASIST.pth")
-        self.fc_cm.weight = nn.Parameter(aasist["out_layer.weight"][1, :].unsqueeze(0), requires_grad=False)
-        self.fc_cm.bias = nn.Parameter(aasist["out_layer.bias"][1], requires_grad=False)
-
-    def forward_SV_prob(self, embd_asv_enr, embd_asv_tst):
-        asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
-        asv_score = asv_cos
-        p_sv = self.sigmoid(asv_score)
-        # p_sv = asv_score
-        return p_sv
-
-    def forward_CM_prob(self, embd_cm_tst):
-        cm_score = self.fc_cm(embd_cm_tst)
-        p_cm = self.sigmoid(cm_score)
-        # p_cm = cm_score
-        return p_cm
-
-    def forward(self, embd_asv_enr, embd_asv_tst, embd_cm_tst):
-        p_sv = self.forward_SV_prob(embd_asv_enr, embd_asv_tst)
-        p_cm = self.forward_CM_prob(embd_cm_tst)
-        x = p_sv * p_cm
-        return x
-
-    def calc_loss(self, embd_asv_enr, embd_asv_tst, embd_cm_tst, labels):
-        return 0
-
-
 class Baseline1(nn.Module):
     def __init__(self):
         super().__init__()
@@ -126,6 +92,11 @@ class Parallel_PR(nn.Module):
 
     def forward_SV_prob(self, embd_asv_enr, embd_asv_tst):
         asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
+        if self.calibrator:
+            asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
+            p_sv = self.calibrator.predict_proba(asv_cos.cpu().numpy())[:, 1]
+            p_sv = torch.from_numpy(p_sv).to(embd_asv_enr.device).unsqueeze(1).float()
+            return p_sv
         asv_score = asv_cos
         p_sv = self.sigmoid(asv_score)
         return p_sv
@@ -137,10 +108,6 @@ class Parallel_PR(nn.Module):
 
     def forward(self, embd_asv_enr, embd_asv_tst, embd_cm_tst):
         p_sv = self.forward_SV_prob(embd_asv_enr, embd_asv_tst)
-        if not self.trainable and self.calibrator:
-            asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
-            p_sv = self.calibrator.predict_proba(asv_cos.cpu().numpy())[:, 1]
-            p_sv = torch.from_numpy(p_sv).to(embd_asv_enr.device).unsqueeze(1)
         p_cm = self.forward_CM_prob(embd_cm_tst)
         x = p_sv * p_cm
         return x
@@ -153,19 +120,16 @@ class Parallel_PR(nn.Module):
         return loss
 
 
-class Parallel_SR(nn.Module):
-    def __init__(self, trainable=True):
+class Baseline1_improved(nn.Module):
+    def __init__(self):
         super().__init__()
-        self.name = "SumRule"
-        self.trainable = trainable
+        self.name = "Baseline1+scaling"
         self.fc_cm = nn.Linear(160, 1)
-        if not self.trainable:
-            aasist = torch.load("./aasist/models/weights/AASIST.pth")
-            self.fc_cm.weight = nn.Parameter(aasist["out_layer.weight"][1, :].unsqueeze(0), requires_grad=False)
-            self.fc_cm.bias = nn.Parameter(aasist["out_layer.bias"][1], requires_grad=False)
+        aasist = torch.load("./aasist/models/weights/AASIST.pth")
+        self.fc_cm.weight = nn.Parameter(aasist["out_layer.weight"][1, :].unsqueeze(0), requires_grad=False)
+        self.fc_cm.bias = nn.Parameter(aasist["out_layer.bias"][1], requires_grad=False)
         self.coss = nn.CosineSimilarity(dim=1, eps=1e-8)
         self.sigmoid = nn.Sigmoid()
-        self.loss_sasv = nn.BCELoss(weight=torch.FloatTensor([0.1]))
 
     def forward_SV_prob(self, embd_asv_enr, embd_asv_tst):
         asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
@@ -185,8 +149,5 @@ class Parallel_SR(nn.Module):
         return x
 
     def calc_loss(self, embd_asv_enr, embd_asv_tst, embd_cm_tst, labels):
-        if not self.trainable:
-            return 0
-        sasv_score = self.forward(embd_asv_enr, embd_asv_tst, embd_cm_tst)
-        loss = self.loss_sasv(torch.clamp(sasv_score, max=1), labels.unsqueeze(1).float())
-        return loss
+        return 0
+

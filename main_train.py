@@ -14,8 +14,8 @@ def initParams():
 
     parser.add_argument('--seed', type=int, help="random number seed", default=688)
 
-    parser.add_argument('-m', '--model_name', help='Model arch', default='baseline',
-                        choices=['baseline1', 'baseline2', 'pr', 'sr', 'pr_c'])
+    parser.add_argument('-m', '--model_name', help='Model arch', default='pr',
+                        choices=['baseline1', 'baseline2', 'pr', 'pr_c', 'baseline1_improved'])
     parser.add_argument('-tr', '--trainable', type=str2bool, nargs='?', const=True, default=True)
 
     # Output folder prepare
@@ -103,11 +103,11 @@ def train(args):
     if args.model_name == "pr":
         model = Parallel_PR(trainable=args.trainable)
     elif args.model_name == "pr_c":
-        f = open("./calibrator/sv_isotonic.pk", 'rb')
+        f = open("./calibrator/sv_sigmoid.pk", 'rb')
         calibrator = pkl.load(f)
         model = Parallel_PR(trainable=False, calibrator=calibrator)
-    elif args.model_name == "sr":
-        model = Parallel_SR(trainable=args.trainable)
+    elif args.model_name == "baseline1_improved":
+        model = Baseline1_improved()
     elif args.model_name == "baseline1":
         model = Baseline1()
     elif args.model_name == "baseline2":
