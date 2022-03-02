@@ -75,12 +75,18 @@ class Baseline2(nn.Module):
         return self.loss(x, labels)
 
 
+def cos2prob_lin(cos):
+    return (cos + 1) / 2
+
+
 class Parallel_PR(nn.Module):
-    def __init__(self, trainable=True, calibrator=None):
+    def __init__(self, trainable=True, calibrator=None, map_function=None):
         super().__init__()
+        assert (not calibrator) or (not map_function)
         self.name = "ProductRule"
         self.trainable = trainable
         self.calibrator = calibrator
+        self.map_func = map_function
         self.fc_cm = nn.Linear(160, 1)
         if not self.trainable:
             aasist = torch.load("./aasist/models/weights/AASIST.pth")
@@ -88,7 +94,8 @@ class Parallel_PR(nn.Module):
             self.fc_cm.bias = nn.Parameter(aasist["out_layer.bias"][1], requires_grad=False)
         self.coss = nn.CosineSimilarity(dim=1, eps=1e-8)
         self.sigmoid = nn.Sigmoid()
-        self.loss_sasv = nn.BCELoss(weight=torch.FloatTensor([0.1]))
+        if self.trainable:
+            self.loss_sasv = nn.BCELoss(weight=torch.FloatTensor([0.9]))
 
     def forward_SV_prob(self, embd_asv_enr, embd_asv_tst):
         asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
@@ -97,9 +104,12 @@ class Parallel_PR(nn.Module):
             p_sv = self.calibrator.predict_proba(asv_cos.cpu().numpy())[:, 1]
             p_sv = torch.from_numpy(p_sv).to(embd_asv_enr.device).unsqueeze(1).float()
             return p_sv
-        asv_score = asv_cos
-        p_sv = self.sigmoid(asv_score)
-        return p_sv
+        if self.map_func == "linear":
+            return cos2prob_lin(asv_cos)
+        elif self.map_func == "sigmoid":
+            return self.sigmoid(asv_cos)
+        else:
+            raise ValueError("which function to calculate probability")
 
     def forward_CM_prob(self, embd_cm_tst):
         cm_score = self.fc_cm(embd_cm_tst)
@@ -121,9 +131,10 @@ class Parallel_PR(nn.Module):
 
 
 class Baseline1_improved(nn.Module):
-    def __init__(self):
+    def __init__(self, map_function="sigmoid"):
         super().__init__()
         self.name = "Baseline1+scaling"
+        self.map_func = map_function
         self.fc_cm = nn.Linear(160, 1)
         aasist = torch.load("./aasist/models/weights/AASIST.pth")
         self.fc_cm.weight = nn.Parameter(aasist["out_layer.weight"][1, :].unsqueeze(0), requires_grad=False)
@@ -133,9 +144,12 @@ class Baseline1_improved(nn.Module):
 
     def forward_SV_prob(self, embd_asv_enr, embd_asv_tst):
         asv_cos = self.coss(embd_asv_enr, embd_asv_tst).unsqueeze(1)
-        asv_score = asv_cos
-        p_sv = self.sigmoid(asv_score)
-        return p_sv
+        if self.map_func == "linear":
+            return cos2prob_lin(asv_cos)
+        elif self.map_func == "sigmoid":
+            return self.sigmoid(asv_cos)
+        else:
+            raise ValueError("which function to calculate probability")
 
     def forward_CM_prob(self, embd_cm_tst):
         cm_score = self.fc_cm(embd_cm_tst)

@@ -59,12 +59,6 @@ if __name__ == '__main__':
 
     scores, labels = create_calibration_data(coh_utt_emb, coh_spk_emb, coh_utt_meta_dict)
 
-    sv_isotonic = CalibratedClassifierCV(method="isotonic")
-    sv_isotonic.fit(scores, labels)
-
-    with open("./calibrator/" + "sv_isotonic.pk", "wb") as f:
-        pickle.dump(sv_isotonic, f)
-
     sv_sigmoid = CalibratedClassifierCV(method="sigmoid")
     sv_sigmoid.fit(scores, labels)
 
