@@ -14,10 +14,10 @@ def initParams():
 
     parser.add_argument('--seed', type=int, help="random number seed", default=688)
 
-    parser.add_argument('-m', '--model_name', help='Model arch', default='pr',
+    parser.add_argument('-m', '--model_name', help='Model arch', default='pr_s_f',
                         choices=['baseline1', 'baseline2',
-                                 'pr_l_u', 'pr_s_u', 'pr_c_u', 'pr_l_t', 'pr_s_t',
-                                 'baseline1_l_u', 'baseline1_s_u'])
+                                 'pr_l_i', 'pr_s_i', 'pr_c_i', 'pr_l_f', 'pr_s_f',
+                                 'baseline1_l_i', 'baseline1_s_i'])
 
     # Output folder prepare
     parser.add_argument(
@@ -66,12 +66,11 @@ def initParams():
     set_seed(args)
 
     # generate speaker-utterance meta information
-    if not (
+    assert (
             os.path.exists(args.spk_meta_dir + "spk_meta_trn.pk")
             and os.path.exists(args.spk_meta_dir + "spk_meta_dev.pk")
             and os.path.exists(args.spk_meta_dir + "spk_meta_eval.pk")
-    ):
-        generate_spk_meta(args)
+    )
 
     if args.test_only:
         pass
@@ -103,7 +102,7 @@ def initParams():
 def train(args):
     if "pr" in args.model_name:
         mapping_dict = {"l": "linear", "s": "sigmoid", "c": None}
-        trainable_dict = {"u": False, "t": True}
+        trainable_dict = {"i": False, "f": True}
         if "c" in args.model_name:
             f = open("./calibrator/sv_sigmoid.pk", 'rb')
             calibrator = pkl.load(f)
