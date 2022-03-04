@@ -5,7 +5,8 @@
 
 ### Data preparation
 Get the pre-trained ASV and CM embeddings from [here](https://drive.google.com/drive/folders/1kn_slob4BGHPmk_O8HaAiJE5P6qqBFV7?usp=sharing).
-Our embedding extractions process is the same as in the [baseline repository](https://github.com/sasv-challenge/SASVC2022_Baseline) (commit 8bfbf1f3f7373). Please refer to their `save_embeddings.py`.
+
+Our embedding extractions process is the same as in the [baseline repository](https://github.com/sasv-challenge/SASVC2022_Baseline) (commit 8bfbf1f3f7373). Please refer to their `save_embeddings.py`. The ASV subsystem is from [here](https://github.com/TaoRuijie/ECAPA-TDNN/tree/a2290930b910a3cba7e099d2447d02c18919b3a4) and CM subsystem from [here](https://github.com/clovaai/aasist/tree/a04c9863f63d44471dde8a6abcb3b082b07cd1d1).
 
 ### Run our code
 Our code is based on PyTorch.
