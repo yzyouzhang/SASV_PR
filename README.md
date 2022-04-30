@@ -21,10 +21,11 @@ python3 main_train.py -o ./exp_result/ -m pr_s_f
 
 ### Citation
 ```
-@article{zhang2022prob,
-  title={A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification},
-  author={Zhang, You and Zhu, Ge and Duan, Zhiyao},
-  journal={arXiv preprint arXiv:2202.05253},
-  year={2022}
+@inproceedings{zhang2022prob,
+   title={A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification},
+   author={Zhang, You and Zhu, Ge and Duan, Zhiyao},
+   year={2022},
+   booktitle = {Proc. Odyssey, The Speaker and Language Recognition Workshop},
+   type = {Conference Proceedings}
 }
 ```
