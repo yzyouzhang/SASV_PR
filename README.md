@@ -1,7 +1,7 @@
 # SASV_PR
 
-## A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification
-[Paper link](https://arxiv.org/pdf/2202.05253.pdf)
+## [A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification](https://www.isca-speech.org/archive/odyssey_2022/zhang22b_odyssey.html)
+[[PDF](https://www.isca-speech.org/archive/pdfs/odyssey_2022/zhang22b_odyssey.pdf)][[Video](https://www.youtube.com/watch?v=98p-KLH3cKc)][[Slides](https://labsites.rochester.edu/air/publications/Zhang22Odyssey.pdf)]
 
 ### Data preparation
 Get the pre-trained ASV and CM embeddings from [here](https://drive.google.com/drive/folders/1kn_slob4BGHPmk_O8HaAiJE5P6qqBFV7?usp=sharing).
@@ -22,10 +22,11 @@ python3 main_train.py -o ./exp_result/ -m pr_s_f
 ### Citation
 ```
 @inproceedings{zhang2022prob,
-   title={A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification},
-   author={Zhang, You and Zhu, Ge and Duan, Zhiyao},
-   year={2022},
-   booktitle = {Proc. Odyssey, The Speaker and Language Recognition Workshop},
-   type = {Conference Proceedings}
+  author={You Zhang and Ge Zhu and Zhiyao Duan},
+  title={{A Probabilistic Fusion Framework for Spoofing Aware Speaker Verification}},
+  year=2022,
+  booktitle={Proc. The Speaker and Language Recognition Workshop (Odyssey)},
+  pages={77--84},
+  doi={10.21437/Odyssey.2022-11}
 }
 ```
